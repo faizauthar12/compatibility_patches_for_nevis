@@ -1,0 +1,62 @@
+From f80d53b9107a76ef90a1572f5f0a067de627c5be Mon Sep 17 00:00:00 2001
+From: Wulsic <wulsic@hotmail.com>
+Date: Wed, 17 Jun 2015 21:34:47 +0200
+Subject: [PATCH] Support old audio API
+
+Change-Id: I6143a4ef37de8664698d32f01b9eac21f3d52c6a
+---
+ services/audioflinger/AudioFlinger.cpp | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/services/audioflinger/AudioFlinger.cpp b/services/audioflinger/AudioFlinger.cpp
+index 0b2943c..c79d35d 100644
+--- a/services/audioflinger/AudioFlinger.cpp
++++ b/services/audioflinger/AudioFlinger.cpp
+@@ -153,11 +153,13 @@ static int load_audio_interface(const char *if_name, audio_hw_device_t **dev)
+     if (rc) {
+         goto out;
+     }
++#if !defined(ICS_AUDIO_BLOB) && !defined(MR0_AUDIO_BLOB)
+     if ((*dev)->common.version < AUDIO_DEVICE_API_VERSION_MIN) {
+         ALOGE("%s wrong audio hw device version %04x", __func__, (*dev)->common.version);
+         rc = BAD_VALUE;
+         goto out;
+     }
++#endif
+     return 0;
+ 
+ out:
+@@ -1791,6 +1793,7 @@ audio_module_handle_t AudioFlinger::loadHwModule_l(const char *name)
+     {  // scope for auto-lock pattern
+         AutoMutex lock(mHardwareLock);
+ 
++#if !defined(ICS_AUDIO_BLOB) && !defined(MR0_AUDIO_BLOB)
+         if (0 == mAudioHwDevs.size()) {
+             mHardwareStatus = AUDIO_HW_GET_MASTER_VOLUME;
+             if (NULL != dev->get_master_volume) {
+@@ -1808,6 +1811,7 @@ audio_module_handle_t AudioFlinger::loadHwModule_l(const char *name)
+                 }
+             }
+         }
++#endif
+ 
+         mHardwareStatus = AUDIO_HW_SET_MASTER_VOLUME;
+         if ((NULL != dev->set_master_volume) &&
+@@ -1816,12 +1820,14 @@ audio_module_handle_t AudioFlinger::loadHwModule_l(const char *name)
+                     AudioHwDevice::AHWD_CAN_SET_MASTER_VOLUME);
+         }
+ 
++#if !defined(ICS_AUDIO_BLOB) && !defined(MR0_AUDIO_BLOB)
+         mHardwareStatus = AUDIO_HW_SET_MASTER_MUTE;
+         if ((NULL != dev->set_master_mute) &&
+             (OK == dev->set_master_mute(dev, mMasterMute))) {
+             flags = static_cast<AudioHwDevice::Flags>(flags |
+                     AudioHwDevice::AHWD_CAN_SET_MASTER_MUTE);
+         }
++#endif
+ 
+         mHardwareStatus = AUDIO_HW_IDLE;
+     }
+-- 
+1.9.1
+
