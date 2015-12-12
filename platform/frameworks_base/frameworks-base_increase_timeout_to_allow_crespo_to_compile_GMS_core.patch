@@ -1,0 +1,26 @@
+From db3cb58e28ad98a153a3fbac0af13e5eeb4e0980 Mon Sep 17 00:00:00 2001
+From: Dmitry Grinberg <dmitrygr@gmail.com>
+Date: Wed, 4 Nov 2015 10:23:16 +0000
+Subject: [PATCH] M for crespo: Increase timeout to allow crespo to compile GMS
+ core
+
+---
+ services/core/java/com/android/server/pm/PackageManagerService.java | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/services/core/java/com/android/server/pm/PackageManagerService.java b/services/core/java/com/android/server/pm/PackageManagerService.java
+index af0cec7..010ed0b 100644
+--- a/services/core/java/com/android/server/pm/PackageManagerService.java
++++ b/services/core/java/com/android/server/pm/PackageManagerService.java
+@@ -339,7 +339,7 @@ public class PackageManagerService extends IPackageManager.Stub {
+      * minute but we sometimes do very lengthy I/O operations on this thread,
+      * such as installing multi-gigabyte applications, so ours needs to be longer.
+      */
+-    private static final long WATCHDOG_TIMEOUT = 1000*60*10;     // ten minutes
++    private static final long WATCHDOG_TIMEOUT = 1000*60*60;     // sixty minutes
+ 
+     /**
+      * Wall-clock timeout (in milliseconds) after which we *require* that an fstrim
+-- 
+1.9.1
+
