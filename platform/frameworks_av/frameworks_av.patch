@@ -1,7 +1,7 @@
-From 289d290349a792f397346630e85653b656c5b7ac Mon Sep 17 00:00:00 2001
+From 2bb1a645a9fad4d3dfeda5947a05cf3b1b44c846 Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Wed, 24 Apr 2013 11:37:19 +0700
-Subject: [PATCH 1/9] OMXCodec: Re-implement requires-flush-before-shutdown
+Subject: [PATCH 01/10] OMXCodec: Re-implement requires-flush-before-shutdown
  quirk
 
 Support is already there, but is not in the codec quirk reading list.
@@ -13,27 +13,27 @@ Change-Id: I1beac06af8118dcf0c248b631bc8e6dbbab2c1d5
  1 file changed, 3 insertions(+)
 
 diff --git a/media/libstagefright/OMXCodec.cpp b/media/libstagefright/OMXCodec.cpp
-index 4c1249f..afe4b5c 100644
+index abe19a0..b3862f0 100644
 --- a/media/libstagefright/OMXCodec.cpp
 +++ b/media/libstagefright/OMXCodec.cpp
-@@ -410,6 +410,9 @@ uint32_t OMXCodec::getComponentQuirks(
+@@ -270,6 +270,9 @@ uint32_t OMXCodec::getComponentQuirks(
      if (info->hasQuirk("output-buffers-are-unreadable")) {
          quirks |= kOutputBuffersAreUnreadable;
      }
 +    if (info->hasQuirk("requires-flush-before-shutdown")) {
 +        quirks |= kRequiresFlushBeforeShutdown;
 +    }
-     if (info->hasQuirk("requies-loaded-to-idle-after-allocation")) {
-         quirks |= kRequiresLoadedToIdleAfterAllocation;
-     }
+ 
+     return quirks;
+ }
 -- 
-2.3.5
+2.7.0
 
 
-From 4008d970a6c60170c34f7d135bdb969bc52ed6ae Mon Sep 17 00:00:00 2001
+From 24a6b28c417709f2704a08e330b2bc2893f18b07 Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Tue, 17 Dec 2013 13:15:52 +0700
-Subject: [PATCH 2/9] OMXCodec: set default input buffer size
+Subject: [PATCH 02/10] OMXCodec: set default input buffer size
 
 Broadcom OMX only set the buffer size to 65536 by default which
 is not enough for higher bitrate video
@@ -47,14 +47,14 @@ Change-Id: I74372f3d821e41feb38b9bc0cca4ef56aa019493
  2 files changed, 24 insertions(+)
 
 diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
-index f5a6fbd..b780128 100644
+index 4807b65..059c6e8 100644
 --- a/media/libstagefright/ACodec.cpp
 +++ b/media/libstagefright/ACodec.cpp
-@@ -1913,6 +1913,18 @@ status_t ACodec::configureCodec(
-     } else if (!strcmp("OMX.Nvidia.aac.decoder", mComponentName.c_str())) {
-         err = setMinBufferSize(kPortIndexInput, 8192);  // XXX
+@@ -2261,6 +2261,18 @@ status_t ACodec::configureCodec(
+     if (rateFloat > 0) {
+         err = setOperatingRate(rateFloat, video);
      }
-+// RHEA's OMX fail to set a reasonable default size from width and height
++// Rhea's OMX fail to set a reasonable default size from width and height
 +#ifdef RHEA_HWC
 +    else if (!strncmp(mComponentName.c_str(), "OMX.BRCM.vc4.decoder.", 21)) {
 +        int32_t width;
@@ -70,14 +70,14 @@ index f5a6fbd..b780128 100644
      mBaseOutputFormat = outputFormat;
  
 diff --git a/media/libstagefright/OMXCodec.cpp b/media/libstagefright/OMXCodec.cpp
-index afe4b5c..37e8ed6 100644
+index b3862f0..017aac8 100644
 --- a/media/libstagefright/OMXCodec.cpp
 +++ b/media/libstagefright/OMXCodec.cpp
-@@ -957,6 +957,18 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
+@@ -678,6 +678,18 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
      if (meta->findInt32(kKeyMaxInputSize, &maxInputSize)) {
          setMinBufferSize(kPortIndexInput, (OMX_U32)maxInputSize);
      }
-+// RHEA's OMX fail to set a reasonable default size from width and height
++// Rhea's OMX fail to set a reasonable default size from width and height
 +#ifdef RHEA_HWC
 +    else if (!strncmp(mComponentName, "OMX.BRCM.vc4.decoder.", 21)) {
 +        int32_t width;
@@ -93,13 +93,13 @@ index afe4b5c..37e8ed6 100644
      initOutputFormat(meta);
  
 -- 
-2.3.5
+2.7.0
 
 
-From ac2e3e93fddb3fe67063dcf4d1c7fc4ee18636f1 Mon Sep 17 00:00:00 2001
+From 1a8c5a673fc940d7ba2c46c9c0977e7c1c4c2118 Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Wed, 19 Nov 2014 20:33:58 +0700
-Subject: [PATCH 3/9] ACodec: skip port index checking on vc4 encoder
+Subject: [PATCH 03/10] ACodec: skip port index checking on vc4 encoder
 
 Change-Id: I3fe742a8ec4b7f9bc0c4e5f0825fd3b88965a95e
 ---
@@ -107,29 +107,29 @@ Change-Id: I3fe742a8ec4b7f9bc0c4e5f0825fd3b88965a95e
  1 file changed, 5 insertions(+)
 
 diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
-index b780128..1214eed 100644
+index 059c6e8..feaa7be 100644
 --- a/media/libstagefright/ACodec.cpp
 +++ b/media/libstagefright/ACodec.cpp
-@@ -3746,6 +3746,11 @@ status_t ACodec::getPortFormat(OMX_U32 portIndex, sp<AMessage> &notify) {
-                 mNode, OMX_IndexParamPortDefinition, &def, sizeof(def)),
-              (status_t)OK);
+@@ -4134,6 +4134,11 @@ status_t ACodec::getPortFormat(OMX_U32 portIndex, sp<AMessage> &notify) {
+         return err;
+     }
  
 +#ifdef RHEA_HWC
 +    if (strncmp(mComponentName.c_str(), "OMX.BRCM.vc4.encoder.", 21) != 0)
 +        // Skip checking on vc4 encoder. It will return the incorrect
 +        // port index, but correct parameters.
 +#endif
-     CHECK_EQ((int)def.eDir,
-             (int)(portIndex == kPortIndexOutput ? OMX_DirOutput : OMX_DirInput));
- 
+     if (def.eDir != (portIndex == kPortIndexOutput ? OMX_DirOutput : OMX_DirInput)) {
+         ALOGE("unexpected dir: %s(%d) on %s port", asString(def.eDir), def.eDir, niceIndex);
+         return BAD_VALUE;
 -- 
-2.3.5
+2.7.0
 
 
-From 9c172527c152d0279713f2b0a0c84dd4ef0ad7f0 Mon Sep 17 00:00:00 2001
+From 8967d9229bd64b4f43dc9b8f3bc4cd9e8224b366 Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Sun, 23 Nov 2014 17:27:20 +0700
-Subject: [PATCH 4/9] ACodec: Don't trust provided width/height when setting
+Subject: [PATCH 04/10] ACodec: Don't trust provided width/height when setting
  input buffer size
 
 They are bogus
@@ -140,11 +140,11 @@ Change-Id: I202b291a84d2f9a8c29aa2177ba52a0465f39deb
  1 file changed, 3 insertions(+), 7 deletions(-)
 
 diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
-index 1214eed..7c94a75 100644
+index feaa7be..13619ba 100644
 --- a/media/libstagefright/ACodec.cpp
 +++ b/media/libstagefright/ACodec.cpp
-@@ -1916,13 +1916,9 @@ status_t ACodec::configureCodec(
- // RHEA's OMX fail to set a reasonable default size from width and height
+@@ -2264,13 +2264,9 @@ status_t ACodec::configureCodec(
+ // Rhea's OMX fail to set a reasonable default size from width and height
  #ifdef RHEA_HWC
      else if (!strncmp(mComponentName.c_str(), "OMX.BRCM.vc4.decoder.", 21)) {
 -        int32_t width;
@@ -161,13 +161,13 @@ index 1214eed..7c94a75 100644
  #endif
  
 -- 
-2.3.5
+2.7.0
 
 
-From e54104a4cf69f3dc0ea38d99c52325d9ed1eb309 Mon Sep 17 00:00:00 2001
+From cacd34fb28880afcd05334678aa9242642401a30 Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Fri, 28 Nov 2014 21:07:59 +0700
-Subject: [PATCH 5/9] AudioFlinger: i9082: HACK: disable stereo record
+Subject: [PATCH 05/10] AudioFlinger: i9082: HACK: disable stereo record
 
 Stereo record causes audio to speed up x2 for some reason.
 Record in mono and let AudioFlinger resample to stereo
@@ -179,10 +179,10 @@ Change-Id: I59236addc022186fa35bd3b3914f42709c2318de
  1 file changed, 6 insertions(+)
 
 diff --git a/services/audioflinger/AudioFlinger.cpp b/services/audioflinger/AudioFlinger.cpp
-index 25225b0..7da83ad 100644
+index 1acfaad..136b0e2 100644
 --- a/services/audioflinger/AudioFlinger.cpp
 +++ b/services/audioflinger/AudioFlinger.cpp
-@@ -2362,6 +2362,12 @@ sp<AudioFlinger::RecordThread> AudioFlinger::openInput_l(audio_module_handle_t m
+@@ -2080,6 +2080,12 @@ sp<AudioFlinger::RecordThread> AudioFlinger::openInput_l(audio_module_handle_t m
      audio_config_t halconfig = *config;
      audio_hw_device_t *inHwHal = inHwDev->hwDevice();
      audio_stream_in_t *inStream = NULL;
@@ -192,17 +192,17 @@ index 25225b0..7da83ad 100644
 +    halconfig.channel_mask = AUDIO_CHANNEL_IN_MONO;
 +#endif
 +
-     status_t status = inHwHal->open_input_stream(inHwHal, *input, device, &halconfig,
+     status_t status = inHwHal->open_input_stream(inHwHal, *input, devices, &halconfig,
                                          &inStream, flags, address.string(), source);
      ALOGV("openInput_l() openInputStream returned input %p, SamplingRate %d"
 -- 
-2.3.5
+2.7.0
 
 
-From 089cf6cfe45179b6ed35cce5ba3b3bdf57f5cabd Mon Sep 17 00:00:00 2001
+From cde89b5212f2f06e09c68e8a421109931b1a58fd Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Wed, 10 Dec 2014 17:38:10 +0700
-Subject: [PATCH 6/9] AudioFlinger: i9082: HACK: force audio to 48 KHz
+Subject: [PATCH 06/10] AudioFlinger: i9082: HACK: force audio to 48 KHz
 
 Let surfaceflinger do all the resampling instead of the audio HAL
 
@@ -214,10 +214,10 @@ Change-Id: I0113831464f2f64c26a9c93bba8fe6b8229b09b4
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/services/audioflinger/AudioFlinger.cpp b/services/audioflinger/AudioFlinger.cpp
-index 7da83ad..484acfb 100644
+index 136b0e2..ef62a88 100644
 --- a/services/audioflinger/AudioFlinger.cpp
 +++ b/services/audioflinger/AudioFlinger.cpp
-@@ -2364,8 +2364,9 @@ sp<AudioFlinger::RecordThread> AudioFlinger::openInput_l(audio_module_handle_t m
+@@ -2082,8 +2082,9 @@ sp<AudioFlinger::RecordThread> AudioFlinger::openInput_l(audio_module_handle_t m
      audio_stream_in_t *inStream = NULL;
  
  #ifdef RHEA_HWC
@@ -227,15 +227,16 @@ index 7da83ad..484acfb 100644
 +    halconfig.sample_rate = 48000;
  #endif
  
-     status_t status = inHwHal->open_input_stream(inHwHal, *input, device, &halconfig,
+     status_t status = inHwHal->open_input_stream(inHwHal, *input, devices, &halconfig,
 -- 
-2.3.5
+2.7.0
 
 
-From 65cd8e77080f632e56d72099fa243c5b07695a13 Mon Sep 17 00:00:00 2001
+From 5dafec0c7e7af38fc78df455e0d241083eb0d248 Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Tue, 16 Dec 2014 21:12:22 +0700
-Subject: [PATCH 7/9] stagefright: i9082: don't allocate too many extra buffers
+Subject: [PATCH 07/10] stagefright: i9082: don't allocate too many extra
+ buffers
 
 Too many extra buffers (for a total of 8) causes random
 video freezes and freezes on rotation
@@ -247,10 +248,10 @@ Change-Id: Idfe85f3cd77d6aa5422073857ceecec902e3ca68
  2 files changed, 8 insertions(+)
 
 diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
-index 7c94a75..b9be274 100644
+index 13619ba..a334846 100644
 --- a/media/libstagefright/ACodec.cpp
 +++ b/media/libstagefright/ACodec.cpp
-@@ -844,7 +844,11 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
+@@ -1020,7 +1020,11 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
      // This check was present in KitKat.
      if (def.nBufferCountActual < def.nBufferCountMin + *minUndequeuedBuffers) {
  #endif
@@ -263,10 +264,10 @@ index 7c94a75..b9be274 100644
              def.nBufferCountMin + *minUndequeuedBuffers + extraBuffers;
          def.nBufferCountActual = newBufferCount;
 diff --git a/media/libstagefright/OMXCodec.cpp b/media/libstagefright/OMXCodec.cpp
-index 37e8ed6..2fa70a8 100644
+index 017aac8..f08cc84 100644
 --- a/media/libstagefright/OMXCodec.cpp
 +++ b/media/libstagefright/OMXCodec.cpp
-@@ -2377,7 +2377,11 @@ status_t OMXCodec::allocateOutputBuffersFromNativeWindow() {
+@@ -1892,7 +1892,11 @@ status_t OMXCodec::allocateOutputBuffersFromNativeWindow() {
      // This check was present in KitKat.
      if (def.nBufferCountActual < def.nBufferCountMin + minUndequeuedBufs) {
  #endif
@@ -279,13 +280,13 @@ index 37e8ed6..2fa70a8 100644
              def.nBufferCountMin + minUndequeuedBufs + extraBuffers;
          def.nBufferCountActual = newBufferCount;
 -- 
-2.3.5
+2.7.0
 
 
-From 9ad09fc641d31136f32aafd63d76a477e1c419f2 Mon Sep 17 00:00:00 2001
+From b9d17fcb6577c76bab8384d521602e6af834b31a Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Sat, 20 Dec 2014 19:09:59 +0700
-Subject: [PATCH 8/9] stagefright: CAPRI_HWC: fix for screen recording
+Subject: [PATCH 08/10] stagefright: RHEA_HWC: fix for screen recording
 
 Change-Id: Ib8a677eb1ecabc30efe163faa9b209f4db966437
 ---
@@ -294,18 +295,19 @@ Change-Id: Ib8a677eb1ecabc30efe163faa9b209f4db966437
  2 files changed, 9 insertions(+)
 
 diff --git a/media/libstagefright/omx/GraphicBufferSource.cpp b/media/libstagefright/omx/GraphicBufferSource.cpp
-index 44c7edc..b108077 100644
+index 1a7dc9d..1c468d4 100644
 --- a/media/libstagefright/omx/GraphicBufferSource.cpp
 +++ b/media/libstagefright/omx/GraphicBufferSource.cpp
-@@ -269,12 +269,14 @@ void GraphicBufferSource::codecBufferEmptied(OMX_BUFFERHEADERTYPE* header) {
-         } else if (type == kMetadataBufferTypeGraphicBuffer) {
-             GraphicBuffer *buffer;
-             memcpy(&buffer, data + 4, sizeof(buffer));
+@@ -369,6 +369,7 @@ void GraphicBufferSource::codecBufferEmptied(OMX_BUFFERHEADERTYPE* header, int f
+             }
+         } else if (type == kMetadataBufferTypeANWBuffer
+                 && header->nAllocLen >= sizeof(VideoNativeMetadata)) {
 +#ifndef RHEA_HWC
-             if (buffer != codecBuffer.mGraphicBuffer.get()) {
+             VideoNativeMetadata &nativeMeta = *(VideoNativeMetadata *)data;
+             if (nativeMeta.pBuffer != codecBuffer.mGraphicBuffer->getNativeBuffer()) {
                  // should never happen
-                 ALOGE("codecBufferEmptied: buffer is %p, expected %p",
-                         buffer, codecBuffer.mGraphicBuffer.get());
+@@ -376,6 +377,7 @@ void GraphicBufferSource::codecBufferEmptied(OMX_BUFFERHEADERTYPE* header, int f
+                         nativeMeta.pBuffer, codecBuffer.mGraphicBuffer->getNativeBuffer());
                  CHECK(!"codecBufferEmptied: mismatched buffer");
              }
 +#endif
@@ -313,10 +315,10 @@ index 44c7edc..b108077 100644
      }
  
 diff --git a/media/libstagefright/omx/OMXNodeInstance.cpp b/media/libstagefright/omx/OMXNodeInstance.cpp
-index e3a1bd3..07bf1b2 100644
+index 8c949cb..133a234 100644
 --- a/media/libstagefright/omx/OMXNodeInstance.cpp
 +++ b/media/libstagefright/omx/OMXNodeInstance.cpp
-@@ -822,10 +822,17 @@ status_t OMXNodeInstance::createInputSurface(
+@@ -885,10 +885,17 @@ status_t OMXNodeInstance::createGraphicBufferSource(
      }
  
      if (def.format.video.eColorFormat != OMX_COLOR_FormatAndroidOpaque) {
@@ -333,15 +335,15 @@ index e3a1bd3..07bf1b2 100644
 +#endif
      }
  
-     GraphicBufferSource* bufferSource = new GraphicBufferSource(
+     uint32_t usageBits;
 -- 
-2.3.5
+2.7.0
 
 
-From 4c4eb3c3f68b3689e792f1ba8ee27850ba9b3f8c Mon Sep 17 00:00:00 2001
+From a88a1dcec092e17054c10b6290950c11f5fb4fb1 Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Sun, 21 Dec 2014 15:25:33 +0700
-Subject: [PATCH 9/9] stagefright: RHEA_HWC: fix for miracast
+Subject: [PATCH 09/10] stagefright: RHEA_HWC: fix for miracast
 
 Our encoder does not support OMX_Video_ControlRateConstant
 
@@ -351,10 +353,10 @@ Change-Id: I5f98f00406a6b28c1a2a1862fbcefa2fdd9055d6
  1 file changed, 12 insertions(+), 6 deletions(-)
 
 diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
-index b9be274..342887d 100644
+index a334846..3f0dc7e 100644
 --- a/media/libstagefright/ACodec.cpp
 +++ b/media/libstagefright/ACodec.cpp
-@@ -2893,7 +2893,13 @@ static OMX_U32 setPFramesSpacing(int32_t iFramesInterval, int32_t frameRate) {
+@@ -3275,7 +3275,13 @@ static OMX_U32 setPFramesSpacing(int32_t iFramesInterval, int32_t frameRate) {
      return ret;
  }
  
@@ -369,7 +371,7 @@ index b9be274..342887d 100644
      int32_t tmp;
      if (!msg->findInt32("bitrate-mode", &tmp)) {
          return OMX_Video_ControlRateVariable;
-@@ -2909,7 +2915,7 @@ status_t ACodec::setupMPEG4EncoderParameters(const sp<AMessage> &msg) {
+@@ -3291,7 +3297,7 @@ status_t ACodec::setupMPEG4EncoderParameters(const sp<AMessage> &msg) {
          return INVALID_OPERATION;
      }
  
@@ -378,7 +380,7 @@ index b9be274..342887d 100644
  
      float frameRate;
      if (!msg->findFloat("frame-rate", &frameRate)) {
-@@ -2991,7 +2997,7 @@ status_t ACodec::setupH263EncoderParameters(const sp<AMessage> &msg) {
+@@ -3373,7 +3379,7 @@ status_t ACodec::setupH263EncoderParameters(const sp<AMessage> &msg) {
          return INVALID_OPERATION;
      }
  
@@ -387,7 +389,7 @@ index b9be274..342887d 100644
  
      float frameRate;
      if (!msg->findFloat("frame-rate", &frameRate)) {
-@@ -3119,7 +3125,7 @@ status_t ACodec::setupAVCEncoderParameters(const sp<AMessage> &msg) {
+@@ -3501,7 +3507,7 @@ status_t ACodec::setupAVCEncoderParameters(const sp<AMessage> &msg) {
          return INVALID_OPERATION;
      }
  
@@ -396,7 +398,7 @@ index b9be274..342887d 100644
  
      float frameRate;
      if (!msg->findFloat("frame-rate", &frameRate)) {
-@@ -3234,7 +3240,7 @@ status_t ACodec::setupHEVCEncoderParameters(const sp<AMessage> &msg) {
+@@ -3615,7 +3621,7 @@ status_t ACodec::setupHEVCEncoderParameters(const sp<AMessage> &msg) {
          return INVALID_OPERATION;
      }
  
@@ -405,7 +407,7 @@ index b9be274..342887d 100644
  
      float frameRate;
      if (!msg->findFloat("frame-rate", &frameRate)) {
-@@ -3301,7 +3307,7 @@ status_t ACodec::setupVPXEncoderParameters(const sp<AMessage> &msg) {
+@@ -3684,7 +3690,7 @@ status_t ACodec::setupVPXEncoderParameters(const sp<AMessage> &msg) {
      }
      msg->findInt32("i-frame-interval", &iFrameInterval);
  
@@ -415,5 +417,38 @@ index b9be274..342887d 100644
      float frameRate;
      if (!msg->findFloat("frame-rate", &frameRate)) {
 -- 
-2.3.5
+2.7.0
+
+
+From 90ae42e5bb91c5307242a0f91674b6a008a78526 Mon Sep 17 00:00:00 2001
+From: Pawit Pornkitprasan <p.pawit@gmail.com>
+Date: Sun, 24 Jan 2016 12:38:26 +0700
+Subject: [PATCH 10/10] AudioFlinger: i9082: fix getMicMute
+
+Our audio driver sometimes return NO_INIT instead of NO_ERROR
+for the get_mic_mute call. Prior to Marshmallow, this didn't cause
+any issue because the return code was not checked.
+---
+ services/audioflinger/AudioFlinger.cpp | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/services/audioflinger/AudioFlinger.cpp b/services/audioflinger/AudioFlinger.cpp
+index ef62a88..d633dc2 100644
+--- a/services/audioflinger/AudioFlinger.cpp
++++ b/services/audioflinger/AudioFlinger.cpp
+@@ -847,6 +847,12 @@ bool AudioFlinger::getMicMute() const
+     for (size_t i = 0; i < mAudioHwDevs.size(); i++) {
+         audio_hw_device_t *dev = mAudioHwDevs.valueAt(i)->hwDevice();
+         status_t result = dev->get_mic_mute(dev, &state);
++#ifdef RHEA_HWC
++        // When not muted, Rhea's audio driver incorrectly returns NO_INIT instead of NO_ERROR
++        if (mAudioHwDevs.valueAt(i) == mPrimaryHardwareDev && result == NO_INIT) {
++            result = NO_ERROR;
++        }
++#endif
+         if (result == NO_ERROR) {
+             mute = mute && state;
+         }
+-- 
+2.7.0
 
