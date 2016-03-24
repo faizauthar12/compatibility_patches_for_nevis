@@ -164,73 +164,60 @@ index 1214eed..7c94a75 100644
 2.3.5
 
 
-From e54104a4cf69f3dc0ea38d99c52325d9ed1eb309 Mon Sep 17 00:00:00 2001
-From: Pawit Pornkitprasan <p.pawit@gmail.com>
-Date: Fri, 28 Nov 2014 21:07:59 +0700
-Subject: [PATCH 5/9] AudioFlinger: i9082: HACK: disable stereo record
+From 78bd5b6456f1a7e5955cc4de0a4739e4be3df3fa Mon Sep 17 00:00:00 2001
+From: Faiz Authar <faizauthar@gmail.com>
+Date: Thu, 24 Mar 2016 16:12:19 +0700
+Subject: AudioFlinger: i9082: HACK: disable stereo record
 
 Stereo record causes audio to speed up x2 for some reason.
 Record in mono and let AudioFlinger resample to stereo
 (we only have one mic anyway)
 
-Change-Id: I59236addc022186fa35bd3b3914f42709c2318de
----
- services/audioflinger/AudioFlinger.cpp | 6 ++++++
- 1 file changed, 6 insertions(+)
+Change-Id: I4220cfb9aa701b3c631305040e3dcef1506fdaee
 
 diff --git a/services/audioflinger/AudioFlinger.cpp b/services/audioflinger/AudioFlinger.cpp
-index 25225b0..7da83ad 100644
+index 7dfa5c6..2724e12 100644
 --- a/services/audioflinger/AudioFlinger.cpp
 +++ b/services/audioflinger/AudioFlinger.cpp
-@@ -2362,6 +2362,12 @@ sp<AudioFlinger::RecordThread> AudioFlinger::openInput_l(audio_module_handle_t m
+@@ -2383,6 +2383,11 @@ sp<AudioFlinger::RecordThread> AudioFlinger::openInput_l(audio_module_handle_t m
      audio_config_t halconfig = *config;
      audio_hw_device_t *inHwHal = inHwDev->hwDevice();
      audio_stream_in_t *inStream = NULL;
 +
 +#ifdef RHEA_HWC
-+    ALOGD("Forcing channel mask to mono on rhea");
 +    halconfig.channel_mask = AUDIO_CHANNEL_IN_MONO;
 +#endif
 +
      status_t status = inHwHal->open_input_stream(inHwHal, *input, device, &halconfig,
                                          &inStream, flags, address.string(), source);
      ALOGV("openInput_l() openInputStream returned input %p, SamplingRate %d"
--- 
-2.3.5
 
 
-From 089cf6cfe45179b6ed35cce5ba3b3bdf57f5cabd Mon Sep 17 00:00:00 2001
-From: Pawit Pornkitprasan <p.pawit@gmail.com>
-Date: Wed, 10 Dec 2014 17:38:10 +0700
-Subject: [PATCH 6/9] AudioFlinger: i9082: HACK: force audio to 48 KHz
+From 241812c19e43669b7c5d95cde4a20c7da41cdc27 Mon Sep 17 00:00:00 2001
+From: Faiz Authar <faizauthar@gmail.com>
+Date: Thu, 24 Mar 2016 16:18:02 +0700
+Subject: AudioFlinger: i9082: HACK: force audio to 48 KHz
 
 Let surfaceflinger do all the resampling instead of the audio HAL
 
 Don't know if it fixes anything, but worth a try
 
-Change-Id: I0113831464f2f64c26a9c93bba8fe6b8229b09b4
----
- services/audioflinger/AudioFlinger.cpp | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Change-Id: I1e27b4a36b6b0453e537a01ca968daa3fa099958
 
 diff --git a/services/audioflinger/AudioFlinger.cpp b/services/audioflinger/AudioFlinger.cpp
-index 7da83ad..484acfb 100644
+index 2724e12..c8ea15e 100644
 --- a/services/audioflinger/AudioFlinger.cpp
 +++ b/services/audioflinger/AudioFlinger.cpp
-@@ -2364,8 +2364,9 @@ sp<AudioFlinger::RecordThread> AudioFlinger::openInput_l(audio_module_handle_t m
+@@ -2385,7 +2385,9 @@ sp<AudioFlinger::RecordThread> AudioFlinger::openInput_l(audio_module_handle_t m
      audio_stream_in_t *inStream = NULL;
  
  #ifdef RHEA_HWC
--    ALOGD("Forcing channel mask to mono on rhea");
 +    ALOGD("Forcing input to mono 48K on rhea");
      halconfig.channel_mask = AUDIO_CHANNEL_IN_MONO;
 +    halconfig.sample_rate = 48000;
  #endif
  
      status_t status = inHwHal->open_input_stream(inHwHal, *input, device, &halconfig,
--- 
-2.3.5
-
 
 From 65cd8e77080f632e56d72099fa243c5b07695a13 Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
@@ -285,7 +272,7 @@ index 37e8ed6..2fa70a8 100644
 From 9ad09fc641d31136f32aafd63d76a477e1c419f2 Mon Sep 17 00:00:00 2001
 From: Pawit Pornkitprasan <p.pawit@gmail.com>
 Date: Sat, 20 Dec 2014 19:09:59 +0700
-Subject: [PATCH 8/9] stagefright: CAPRI_HWC: fix for screen recording
+Subject: [PATCH 8/9] stagefright: RHEA_HWC: fix for screen recording
 
 Change-Id: Ib8a677eb1ecabc30efe163faa9b209f4db966437
 ---
