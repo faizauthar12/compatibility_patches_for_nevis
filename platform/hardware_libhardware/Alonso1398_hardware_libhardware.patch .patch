@@ -1,4 +1,3 @@
-From 55b03ce6cb8fabf1fb6020809466dfa678cc73a2 Mon Sep 17 00:00:00 2001
 From: Alonso1398 <lual1398@gmail.com>
 Date: Sat, 6 Jun 2015 19:24:02 -0600
 Subject: [PATCH 2/2] Fix audio on rhea devices. You must also apply the
