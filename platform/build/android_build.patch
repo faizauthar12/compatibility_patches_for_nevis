@@ -1,24 +1,26 @@
-From 1dd3222d9a0d5828385aa0f347f305f9316452a5 Mon Sep 17 00:00:00 2001
+From e145ed91d78094f1d922344c56e61e1c37d1c35a Mon Sep 17 00:00:00 2001
 From: Faiz Authar <faizauthar@gmail.com>
-Date: Mon, 11 Apr 2016 13:38:30 +0700
-Subject: Delete this line.. we delete this line to able to compile kernel if
- this line is not delete we stuck at building dtbs,and won't pass it even we
- use -w at kernel makefile Thx to karthick to inform this
+Date: Tue, 12 Apr 2016 15:53:41 +0700
+Subject: Fix Fail compile kernel for rhea
 
-Change-Id: I90048319315cb5ccd96347b8f264a9ac30af9240
+Change-Id: I1f4c011476f9534e0a60410ce61f21ea45db2888
 
 diff --git a/core/tasks/kernel.mk b/core/tasks/kernel.mk
-index 4283dbb..ab9485c 100644
+index 4283dbb..f44579b 100644
 --- a/core/tasks/kernel.mk
 +++ b/core/tasks/kernel.mk
-@@ -255,7 +255,6 @@ $(KERNEL_CONFIG): $(KERNEL_OUT_STAMP) $(KERNEL_DEFCONFIG_SRC) $(KERNEL_ADDITIONA
+@@ -255,13 +255,7 @@ $(KERNEL_CONFIG): $(KERNEL_OUT_STAMP) $(KERNEL_DEFCONFIG_SRC) $(KERNEL_ADDITIONA
  TARGET_KERNEL_BINARIES: $(KERNEL_OUT_STAMP) $(KERNEL_CONFIG) $(KERNEL_HEADERS_INSTALL_STAMP)
  	@echo -e ${CL_GRN}"Building Kernel"${CL_RST}
  	$(MAKE) $(MAKE_FLAGS) -C $(KERNEL_SRC) O=$(KERNEL_OUT) ARCH=$(KERNEL_ARCH) $(KERNEL_CROSS_COMPILE) $(TARGET_PREBUILT_INT_KERNEL_TYPE)
 -	$(hide) if grep -q 'CONFIG_OF=y' $(KERNEL_CONFIG) ; \
-- 			then \
-- 				echo -e ${CL_GRN}"Building DTBs"${CL_RST} ; \
-- 				$(MAKE) $(MAKE_FLAGS) -C $(KERNEL_SRC) O=$(KERNEL_OUT) ARCH=$(KERNEL_ARCH) $(KERNEL_CROSS_COMPILE) dtbs ; \
+-			then \
+-				echo -e ${CL_GRN}"Building DTBs"${CL_RST} ; \
+-				$(MAKE) $(MAKE_FLAGS) -C $(KERNEL_SRC) O=$(KERNEL_OUT) ARCH=$(KERNEL_ARCH) $(KERNEL_CROSS_COMPILE) dtbs ; \
 -			else \
 -				echo "DTBs not enabled" ; \
 -			fi ;
++
+ 	$(hide) if grep -q 'CONFIG_MODULES=y' $(KERNEL_CONFIG) ; \
+ 			then \
+ 				echo -e ${CL_GRN}"Building Kernel Modules"${CL_RST} ; \
