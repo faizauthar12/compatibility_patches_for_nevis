@@ -1,0 +1,28 @@
+From b2215452721ed1ee95125951f44dbfffb9c57ab5 Mon Sep 17 00:00:00 2001
+From: Faiz Authar <faizauthar@gmail.com>
+Date: Fri, 15 Apr 2016 12:38:08 +0700
+Subject: we need to pass DTBS since rhea board not support dtbs and a new
+ commits broke skip dtbs with -w at kernel makefile ... so we need to delete
+ these lines
+
+Change-Id: Ib58990e90739be6ca62fcc04be40713497acafcc
+
+diff --git a/core/tasks/kernel.mk b/core/tasks/kernel.mk
+index fab7722..f91799f 100644
+--- a/core/tasks/kernel.mk
++++ b/core/tasks/kernel.mk
+@@ -285,13 +285,7 @@ $(KERNEL_CONFIG): $(KERNEL_OUT_STAMP) $(KERNEL_DEFCONFIG_SRC) $(KERNEL_ADDITIONA
+ TARGET_KERNEL_BINARIES: $(KERNEL_OUT_STAMP) $(KERNEL_CONFIG) $(KERNEL_HEADERS_INSTALL_STAMP)
+ 	@echo -e ${CL_GRN}"Building Kernel"${CL_RST}
+ 	$(MAKE) $(MAKE_FLAGS) -C $(KERNEL_SRC) O=$(KERNEL_OUT) ARCH=$(KERNEL_ARCH) $(KERNEL_CROSS_COMPILE) $(TARGET_PREBUILT_INT_KERNEL_TYPE)
+-	$(hide) if grep -q 'CONFIG_OF=y' $(KERNEL_CONFIG) ; \
+-			then \
+-				echo -e ${CL_GRN}"Building DTBs"${CL_RST} ; \
+-				$(MAKE) $(MAKE_FLAGS) -C $(KERNEL_SRC) O=$(KERNEL_OUT) ARCH=$(KERNEL_ARCH) $(KERNEL_CROSS_COMPILE) dtbs ; \
+-			else \
+-				echo "DTBs not enabled" ; \
+-			fi ;
++
+ 	$(hide) if grep -q 'CONFIG_MODULES=y' $(KERNEL_CONFIG) ; \
+ 			then \
+ 				echo -e ${CL_GRN}"Building Kernel Modules"${CL_RST} ; \
